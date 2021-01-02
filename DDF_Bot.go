@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"crypto/tls"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"net/textproto"
@@ -265,12 +266,22 @@ func main() {
 	c.sendData("JOIN #vansamaofficial")
 	c.sendMsg("FUCK YOU vanFU")
 	chat := textproto.NewReader(bufio.NewReader(c.conn))
+	log, err := os.Create(logFile)
+	if err != nil {
+		panic(err)
+	}
+	defer log.Close()
 
 	for {
 		msg, err := chat.ReadLine()
 		if err != nil {
 			panic(err)
 		}
+		_, err = io.WriteString(log, (msg + "\n"))
+		if err != nil {
+			panic(err)
+		}
+
 		fmt.Printf("> %v\n", msg)
 		usr := getUser(msg)
 		msgText := getText(msg)
