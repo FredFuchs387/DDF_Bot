@@ -12,6 +12,7 @@ import (
 	"os/signal"
 	"regexp"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -28,6 +29,7 @@ type Chatter struct {
 	banDur int
 }
 
+var userListMutex = &sync.RWMutex{}
 var userList = map[string]*Chatter{}
 
 var userMatch = regexp.MustCompile("^:([^!]+)!")
@@ -90,6 +92,7 @@ var spamMatch = regexp.MustCompile("(?:(?:" + strings.Join(spamSlice, ")|(?:") +
 //linkSlice contains approved sites to be posted in chat
 var linkSlice = []string{
 	`http(s?)://(?:www\.)?clips.twitch.tv/\.*`,
+	`http(s?)://(?:www\.)?jackbox.tv/`,
 	`http(s?)://(?:www\.)?twitch.tv/\.*`,
 	`http(s?)://(?:www\.)?youtube.com/\.*`,
 	`http(s?)://(?:www\.)?youtu.be/\.*`,
@@ -227,13 +230,25 @@ func (c *Connection) sendMsg(format string, a ...interface{}) {
 	return
 }
 
+func getChatter(user string) *Chatter {
+	userListMutex.RLock()
+	chatter, inMap := userList[user]
+	userListMutex.RUnlock()
+	if !inMap {
+		userListMutex.Lock()
+		chatter, inMap = userList[user]
+		if !inMap {
+			chatter = &Chatter{name: user, time: time.Now(), banDur: 6}
+			userList[user] = chatter
+		}
+		userListMutex.Unlock()
+	}
+	return chatter
+}
+
 //Sends the message to timeout a user
 func (c *Connection) timeout(user string) {
-	chatter, inMap := userList[user]
-	if !inMap {
-		chatter = &Chatter{name: user, time: time.Now(), banDur: 6}
-		userList[user] = chatter
-	}
+	chatter := getChatter(user)
 	c.sendMsg("/timeout %v %v", user, chatter.banDur)
 	chatter.banDur *= 50
 	return
@@ -243,11 +258,16 @@ func (c *Connection) timeout(user string) {
 func init() {
 	go func() {
 		for {
-			for _, v := range userList {
-				if time.Now().Sub(v.time) >= time.Second*120 {
-					v.banDur = 6
+			func() {
+				userListMutex.Lock()
+				defer userListMutex.Unlock()
+				for _, v := range userList {
+					if time.Now().Sub(v.time) >= time.Second*120 {
+						v.banDur = 6
+					}
 				}
-			}
+			}()
+			time.Sleep(time.Second * 10)
 		}
 	}()
 }
