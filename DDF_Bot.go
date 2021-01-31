@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"net"
 	"net/textproto"
 	"os"
@@ -37,6 +38,7 @@ var msgMatch = regexp.MustCompile("PRIVMSG #vansamaofficial :(.*)$")
 var charMatch = regexp.MustCompile("[Ѐ-ӿ]+")
 var lenMatch = regexp.MustCompile("^.{400,}$")
 var urlMatch = regexp.MustCompile(`http(s?)://`)
+var onlineMatch = regexp.MustCompile(`(?i)@ddf_bot cock`)
 
 //tosSlice contains strings which violate/risk violating Twitch TOS
 var tosSlice = []string{
@@ -44,6 +46,7 @@ var tosSlice = []string{
 	`(?i)(\W|^)n\W*i\W*(g\W*)+(e\W*|y\W*)?r`,
 	`(?i)(\W|^)n\W*(i\W*|y\W*)(g\W*)+(\W|$|a)`,
 	`(?i)p\W*i\W*d\W*(o\W*|a\W*)r\W*`,
+	wordMatcher(`pidrila`),
 	`(?i)п\W*(и\W*|й\W*)д\W*(о\W*|а\W*)р\W*`,
 	`(?i)н\W*(и\W*|й\W*)г\W*(е\W*|а\W*)р`,
 	wordMatcher(`retard`),
@@ -55,11 +58,8 @@ var tosMatch = regexp.MustCompile("(?:(?:" + strings.Join(tosSlice, ")|(?:") + "
 var engSlice = []string{
 	wordMatcher(`anus`),
 	wordMatcherEndL(`anal`),
-	`(?i)(\W|^)c\W*u+\W*m+\W*($|\s)`,
-	wordMatcher(`fisting`),
 	wordMatcher(`gloryhole`),
 	wordMatcher(`penis`),
-	wordMatcher(`semen`),
 }
 var engMatch = regexp.MustCompile("(?:(?:" + strings.Join(engSlice, ")|(?:") + "))")
 
@@ -70,12 +70,15 @@ var otherLangSlice = []string{
 	wordMatcherEndL(`ebat`),
 	wordMatcherEndL(`eto`),
 	wordMatcherEndL(`kak`),
+	wordMatcherEndL(`kto`),
 	wordMatcher(`kogda`),
 	wordMatcher(`meste`),
 	wordMatcher(`pizdec`),
+	wordMatcher(`pochemu`),
 	wordMatcher(`vpered`),
 	wordMatcher(`vperde`),
 	wordMatcher(`vsem`),
+	wordMatcher(`wsem`),
 	wordMatcherEndL(`za`),
 	`(?i)z\W*d\W*a\W*r\W*o\W*(v\W*|w\W*)a`,
 }
@@ -85,6 +88,7 @@ var otherLangMatch = regexp.MustCompile("(?:(?:" + strings.Join(otherLangSlice, 
 var spamSlice = []string{
 	wordMatcherEndL(`stray228`),
 	wordMatcherEndL(`wewe`),
+	wordMatcherEndL(`veve`),
 	wordMatcher(`flexair`),
 }
 var spamMatch = regexp.MustCompile("(?:(?:" + strings.Join(spamSlice, ")|(?:") + "))")
@@ -106,6 +110,35 @@ var linkSlice = []string{
 
 var linkMatch = regexp.MustCompile("(?:(?:" + strings.Join(linkSlice, ")|(?:") + "))")
 
+//Contains all the possible !8ball responses
+var ballSlice = []string{
+	`As I see it, yes.`,
+	`Ask again later.`,
+	`Better not tell you now.`,
+	`Cannot predict now.`,
+	`Concentrate and ask again.`,
+	`Don't count on it.`,
+	`It is certain.`,
+	`It is decidedly so.`,
+	`Most likely.`,
+	`My reply is no.`,
+	`My sources say no.`,
+	`Outlook not so good.`,
+	`Outlook good.`,
+	`Reply hazy, try again.`,
+	`Signs point to yes.`,
+	`Very doubtful.`,
+	`Without a doubt.`,
+	`Yes.`,
+	`Yes - definitely.`,
+	`You may rely on it.`,
+}
+
+//Matches !8ball at the beginning of a message
+var ballMatch = regexp.MustCompile(`(^)!8ball `)
+
+var dungeonMatch = regexp.MustCompile(`(^)!enter(\W|$)`)
+
 //Converts a normal string into a consistent regex pattern
 func wordMatcher(word string) string {
 	return `(?i)(\W|^)` + strings.Join(strings.Split(word, ""), `+\W*`)
@@ -116,7 +149,7 @@ func wordMatcherEndL(word string) string {
 	return `(?i)(\W|^)` + strings.Join(strings.Split(word, ""), `\W*`) + `(\W|$)`
 }
 
-//Checks text extracted from IRC against the blacklisted regex and notifies the offender
+//Checks text extracted from IRC and responds based on the first matched regex
 func (c *Connection) chatMod(usr string, msgText string) {
 	if lenMatch.MatchString(msgText) {
 		c.timeout(usr)
@@ -159,6 +192,22 @@ func (c *Connection) chatMod(usr string, msgText string) {
 			c.sendMsg("@%v Don't Post Random Links MODS", usr)
 			return
 		}
+		return
+	}
+
+	if ballMatch.MatchString(msgText) {
+		c.sendMsg("@%v %v", usr, ballSlice[rand.Intn(len(ballSlice))])
+		return
+	}
+
+	if dungeonMatch.MatchString(msgText) {
+		c.sendMsg("/timeout %v 300", usr)
+		c.sendMsg("/me %v has entered the dungeon VaN", usr)
+		return
+	}
+
+	if onlineMatch.MatchString(msgText) {
+		c.sendMsg("@%v YEP", usr)
 		return
 	}
 }
