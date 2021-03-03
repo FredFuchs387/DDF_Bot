@@ -33,12 +33,24 @@ type Chatter struct {
 var userListMutex = &sync.RWMutex{}
 var userList = map[string]*Chatter{}
 
-var userMatch = regexp.MustCompile("^:([^!]+)!")
+var userMatch = regexp.MustCompile(`\W:([^!]+)!`)
+var flagMatch = regexp.MustCompile(`@.+?\s:`)
 var msgMatch = regexp.MustCompile("PRIVMSG #vansamaofficial :(.*)$")
+
 var charMatch = regexp.MustCompile("[Ѐ-ӿ]+")
 var lenMatch = regexp.MustCompile("^.{400,}$")
 var urlMatch = regexp.MustCompile(`http(s?)://`)
-var onlineMatch = regexp.MustCompile(`(?i)@ddf_bot cock`)
+var onlineMatch = regexp.MustCompile(`(?i)@your___m0m cock`)
+var bitMatch = regexp.MustCompile(`;bits=[0-9]+;.+?\s`)
+var subMatch = regexp.MustCompile(`;msg-param-cumulative-months=[0-9]+;.+?\s`)
+var numMatch = regexp.MustCompile(`[0-9]+`)
+var modMatch = regexp.MustCompile(`;badges=moderator.+?:`)
+var vipMatch = regexp.MustCompile(`;badges=vip.+?\s`)
+var nukeOnMatch = regexp.MustCompile(`(^)!NukeOn($)`)
+var nukeOffMatch = regexp.MustCompile(`(^)!NukeOff($)`)
+
+//Default state of Nuke is OFF
+var nukeState = false
 
 //tosSlice contains strings which violate/risk violating Twitch TOS
 var tosSlice = []string{
@@ -65,22 +77,38 @@ var engMatch = regexp.MustCompile("(?:(?:" + strings.Join(engSlice, ")|(?:") + "
 
 //otherLangSlice contains non English strings which are to be filtered
 var otherLangSlice = []string{
+	wordMatcherEndL(`bez`),
+	wordMatcherEndL(`cherez`),
+	wordMatcherEndL(`cho`),
+	wordMatcherEndL(`chto`),
 	wordMatcherEndL(`dela`),
 	wordMatcherEndL(`ebani`),
 	wordMatcherEndL(`ebat`),
+	wordMatcherEndL(`est`),
+	wordMatcherEndL(`est'`),
+	wordMatcherEndL(`estb`),
 	wordMatcherEndL(`eto`),
+	wordMatcherEndL(`iz`),
 	wordMatcherEndL(`kak`),
 	wordMatcherEndL(`kto`),
 	wordMatcher(`kogda`),
 	wordMatcher(`meste`),
+	wordMatcherEndL(`nad`),
 	wordMatcher(`pizdec`),
 	wordMatcher(`pochemu`),
+	wordMatcher(`poimal`),
+	wordMatcher(`posle`),
+	wordMatcher(`pered`),
+	wordMatcher(`russkie`),
+	wordMatcher(`ruskie`),
 	wordMatcher(`vpered`),
 	wordMatcher(`vperde`),
 	wordMatcher(`vsem`),
 	wordMatcher(`wsem`),
+	wordMatcherEndL(`vot`),
 	wordMatcherEndL(`za`),
-	`(?i)z\W*d\W*a\W*r\W*o\W*(v\W*|w\W*)a`,
+	wordMatcherEndL(`zaebal`),
+	`(?i)(z\W*?)d\W*a\W*r\W*o\W*(v\W*|w\W*)a`,
 }
 var otherLangMatch = regexp.MustCompile("(?:(?:" + strings.Join(otherLangSlice, ")|(?:") + "))")
 
@@ -90,25 +118,9 @@ var spamSlice = []string{
 	wordMatcherEndL(`wewe`),
 	wordMatcherEndL(`veve`),
 	wordMatcher(`flexair`),
+	wordMatcher(`rat tv`),
 }
 var spamMatch = regexp.MustCompile("(?:(?:" + strings.Join(spamSlice, ")|(?:") + "))")
-
-//linkSlice contains approved sites to be posted in chat
-var linkSlice = []string{
-	`http(s?)://(?:www\.)?clips.twitch.tv/\.*`,
-	`http(s?)://(?:www\.)?jackbox.tv/`,
-	`http(s?)://(?:www\.)?twitch.tv/\.*`,
-	`http(s?)://(?:www\.)?youtube.com/\.*`,
-	`http(s?)://(?:www\.)?youtu.be/\.*`,
-	`http(s?)://(?:www\.)?discord.gg/\.*`,
-	`http(s?)://(?:www\.)?streamlabs.com/\.*`,
-	`http(s?)://(?:www\.)?cameo.com/vansamaofficial`,
-	`http(s?)://(?:www\.)?space.bilibili.com/\.*`,
-	`http(s?)://(?:www\.)?gofundme.com/\.*`,
-	`http(s?)://shop170176806.world.taobao.com/\.*`,
-}
-
-var linkMatch = regexp.MustCompile("(?:(?:" + strings.Join(linkSlice, ")|(?:") + "))")
 
 //Contains all the possible !8ball responses
 var ballSlice = []string{
@@ -150,7 +162,50 @@ func wordMatcherEndL(word string) string {
 }
 
 //Checks text extracted from IRC and responds based on the first matched regex
-func (c *Connection) chatMod(usr string, msgText string) {
+func (c *Connection) chatMod(flags string, usr string, msgText string) {
+	if bitMatch.MatchString(flags) {
+		bitFlag := bitMatch.FindStringSubmatch(flags)
+		bits := numMatch.FindStringSubmatch(bitFlag[0])
+		c.sendMsg("/me %v, Thanks for the %v bits FeelsGoodMan Clap", usr, bits[0])
+		return
+	}
+
+	if subMatch.MatchString(flags) {
+		subFlag := subMatch.FindStringSubmatch(flags)
+		subCount := numMatch.FindStringSubmatch(subFlag[0])
+		c.sendMsg("/me Thanks for the %v months, %v VaN :v:", subCount[0], usr)
+		return
+	}
+
+	if modMatch.MatchString(flags) {
+		if nukeOnMatch.MatchString(msgText) {
+			c.sendMsg("YOU GUYS NEED TO RELAX MODS")
+			nukeState = true
+			return
+		}
+		if nukeOffMatch.MatchString(msgText) {
+			nukeState = false
+			return
+		}
+		return
+	}
+
+	if nukeState {
+		if !modMatch.MatchString(msgText) || !vipMatch.MatchString(msgText) {
+			c.sendMsg("/timeout %v %v", usr, "5")
+		}
+		return
+	}
+
+	if urlMatch.MatchString(msgText) {
+		if !modMatch.MatchString(flags) || !vipMatch.MatchString(flags) {
+			c.timeout(usr)
+			c.sendMsg("@%v Don't Post Links MODS", usr)
+			return
+		}
+		return
+	}
+
 	if lenMatch.MatchString(msgText) {
 		c.timeout(usr)
 		c.sendMsg("@%v Don't Spam Chat MODS", usr)
@@ -165,7 +220,7 @@ func (c *Connection) chatMod(usr string, msgText string) {
 
 	if engMatch.MatchString(msgText) {
 		c.timeout(usr)
-		c.sendMsg("@%v Excessive Vulgarity MODS", usr)
+		c.sendMsg("@%v Stop That Perversion MODS", usr)
 		return
 	}
 
@@ -184,14 +239,6 @@ func (c *Connection) chatMod(usr string, msgText string) {
 	if spamMatch.MatchString(msgText) {
 		c.timeout(usr)
 		c.sendMsg("@%v Don't Spam Chat MODS", usr)
-		return
-	}
-	if urlMatch.MatchString(msgText) {
-		if !linkMatch.MatchString(msgText) {
-			c.timeout(usr)
-			c.sendMsg("@%v Don't Post Random Links MODS", usr)
-			return
-		}
 		return
 	}
 
@@ -226,7 +273,7 @@ func (c *Connection) connect() {
 		holdoff *= 2
 	}
 	c.sendData("PASS oauth:" + getOauth())
-	c.sendData("NICK ddf_bot")
+	c.sendData("NICK your___m0m")
 }
 
 func (c *Connection) disconnect() {
@@ -243,6 +290,14 @@ func getOauth() string {
 	tokenStr := string(token)
 	tokenStr = strings.Trim(tokenStr, "\n")
 	return tokenStr
+}
+
+func getFlags(msg string) string {
+	flags := flagMatch.FindStringSubmatch(msg)
+	if flags != nil {
+		return flags[0]
+	}
+	return ""
 }
 
 //Extracts a twitch user's message from an IRC message
@@ -332,6 +387,7 @@ func main() {
 	}()
 
 	c.connect()
+	c.sendData("CAP REQ : twitch.tv/tags")
 	c.sendData("JOIN #vansamaofficial")
 	c.sendMsg("FUCK YOU vanFU")
 	chat := textproto.NewReader(bufio.NewReader(c.conn))
@@ -352,10 +408,10 @@ func main() {
 		}
 
 		fmt.Printf("> %v\n", msg)
+		flags := getFlags(msg)
 		usr := getUser(msg)
 		msgText := getText(msg)
-
-		c.chatMod(usr, msgText)
+		c.chatMod(flags, usr, msgText)
 
 		if strings.HasPrefix(msg, "PING") {
 			c.pong()
