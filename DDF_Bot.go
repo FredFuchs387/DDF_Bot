@@ -42,10 +42,10 @@ var lenMatch = regexp.MustCompile("^.{400,}$")
 var urlMatch = regexp.MustCompile(`http(s?)://`)
 var onlineMatch = regexp.MustCompile(`(?i)@your___m0m cock`)
 var bitMatch = regexp.MustCompile(`;bits=[0-9]+;.+?\s`)
-var subMatch = regexp.MustCompile(`;msg-param-cumulative-months=[0-9]+;.+?\s`)
+var subMatch = regexp.MustCompile(`;msg-param-cumulative-months=[0-9]+;.+?:`)
 var numMatch = regexp.MustCompile(`[0-9]+`)
 var modMatch = regexp.MustCompile(`;badges=moderator.+?:`)
-var vipMatch = regexp.MustCompile(`;badges=vip.+?\s`)
+var vipMatch = regexp.MustCompile(`;badges=vip.+?:`)
 var nukeOnMatch = regexp.MustCompile(`(^)!NukeOn($)`)
 var nukeOffMatch = regexp.MustCompile(`(^)!NukeOff($)`)
 
@@ -84,6 +84,7 @@ var otherLangSlice = []string{
 	wordMatcherEndL(`dela`),
 	wordMatcherEndL(`ebani`),
 	wordMatcherEndL(`ebat`),
+	wordMatcherEndL(`ectb`),
 	wordMatcherEndL(`est`),
 	wordMatcherEndL(`est'`),
 	wordMatcherEndL(`estb`),
@@ -101,6 +102,8 @@ var otherLangSlice = []string{
 	wordMatcher(`pered`),
 	wordMatcher(`russkie`),
 	wordMatcher(`ruskie`),
+	wordMatcherEndL(`tut`),
+	wordMatcherEndL(`tyt`),
 	wordMatcher(`vpered`),
 	wordMatcher(`vperde`),
 	wordMatcher(`vsem`),
@@ -187,6 +190,10 @@ func (c *Connection) chatMod(flags string, usr string, msgText string) {
 			nukeState = false
 			return
 		}
+		if onlineMatch.MatchString(msgText) {
+			c.sendMsg("@%v YEP", usr)
+			return
+		}
 		return
 	}
 
@@ -250,11 +257,6 @@ func (c *Connection) chatMod(flags string, usr string, msgText string) {
 	if dungeonMatch.MatchString(msgText) {
 		c.sendMsg("/timeout %v 300", usr)
 		c.sendMsg("/me %v has entered the dungeon VaN", usr)
-		return
-	}
-
-	if onlineMatch.MatchString(msgText) {
-		c.sendMsg("@%v YEP", usr)
 		return
 	}
 }
