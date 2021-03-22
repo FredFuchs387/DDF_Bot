@@ -40,17 +40,22 @@ var msgMatch = regexp.MustCompile("PRIVMSG #vansamaofficial :(.*)$")
 var charMatch = regexp.MustCompile("[Ѐ-ӿ]+")
 var lenMatch = regexp.MustCompile("^.{400,}$")
 var urlMatch = regexp.MustCompile(`http(s?)://`)
-var onlineMatch = regexp.MustCompile(`(?i)@your___m0m cock`)
+var onlineMatch = regexp.MustCompile(`(?i)@your___m0m YOURM0M`)
 var bitMatch = regexp.MustCompile(`;bits=[0-9]+;.+?\s`)
 var subMatch = regexp.MustCompile(`;msg-param-cumulative-months=[0-9]+;.+?:`)
 var numMatch = regexp.MustCompile(`[0-9]+`)
-var modMatch = regexp.MustCompile(`;badges=moderator.+?:`)
-var vipMatch = regexp.MustCompile(`;badges=vip.+?:`)
-var nukeOnMatch = regexp.MustCompile(`(^)!NukeOn($)`)
-var nukeOffMatch = regexp.MustCompile(`(^)!NukeOff($)`)
+var modMatch = regexp.MustCompile(`;badges=moderator.+?\s`)
+var vipMatch = regexp.MustCompile(`;badges=vip.+?\s`)
+var nukeOnMatch = regexp.MustCompile(`(?i)(^)!NukeOn($)`)
+var nukeOffMatch = regexp.MustCompile(`(?i)(^)!NukeOff($)`)
+var mediashare = regexp.MustCompile(`(?i)(^)!mediashare($)`)
+var mediashareOff = regexp.MustCompile(`(?i)(^)!mediashareoff($)`)
 
 //Default state of Nuke is OFF
 var nukeState = false
+
+//Default state of Media Share Notifications is OFF
+var mediaState = false
 
 //tosSlice contains strings which violate/risk violating Twitch TOS
 var tosSlice = []string{
@@ -59,21 +64,12 @@ var tosSlice = []string{
 	`(?i)(\W|^)n\W*(i\W*|y\W*)(g\W*)+(\W|$|a)`,
 	`(?i)p\W*i\W*d\W*(o\W*|a\W*)r\W*`,
 	wordMatcher(`pidrila`),
-	`(?i)п\W*(и\W*|й\W*)д\W*(о\W*|а\W*)р\W*`,
-	`(?i)н\W*(и\W*|й\W*)г\W*(е\W*|а\W*)р`,
+	`(?i)п\PL*(и\PL*|й\PL*)д\PL*(о\PL*|а\PL*)р\PL*`,
+	`(?i)н\PL*(и\PL*|й\PL*)г\PL*(е\PL*|а\PL*)р`,
 	wordMatcher(`retard`),
 	wordMatcher(`tranny`),
 }
 var tosMatch = regexp.MustCompile("(?:(?:" + strings.Join(tosSlice, ")|(?:") + "))")
-
-//engSlice contains English language strings which are to be filtered
-var engSlice = []string{
-	wordMatcher(`anus`),
-	wordMatcherEndL(`anal`),
-	wordMatcher(`gloryhole`),
-	wordMatcher(`penis`),
-}
-var engMatch = regexp.MustCompile("(?:(?:" + strings.Join(engSlice, ")|(?:") + "))")
 
 //otherLangSlice contains non English strings which are to be filtered
 var otherLangSlice = []string{
@@ -191,23 +187,32 @@ func (c *Connection) chatMod(flags string, usr string, msgText string) {
 			return
 		}
 		if onlineMatch.MatchString(msgText) {
-			c.sendMsg("@%v YEP", usr)
+			c.sendMsg("@%v YOURM0M", usr)
+			return
+		}
+		if mediashare.MatchString(msgText) {
+			mediaState = true
+			c.sendMsg("/me Hey chat, Van will play your gachimuchi remixes if you include them in your donation! HandsUp")
+			return
+		}
+		if mediashareOff.MatchString(msgText) {
+			mediaState = false
 			return
 		}
 		return
 	}
 
 	if nukeState {
-		if !modMatch.MatchString(msgText) || !vipMatch.MatchString(msgText) {
+		if !modMatch.MatchString(flags) || !vipMatch.MatchString(flags) {
 			c.sendMsg("/timeout %v %v", usr, "5")
 		}
 		return
 	}
 
 	if urlMatch.MatchString(msgText) {
-		if !modMatch.MatchString(flags) || !vipMatch.MatchString(flags) {
+		if !vipMatch.MatchString(flags) {
 			c.timeout(usr)
-			c.sendMsg("@%v Don't Post Links MODS", usr)
+			//			c.sendMsg("@%v Don't Post Links MODS", usr)
 			return
 		}
 		return
@@ -215,41 +220,35 @@ func (c *Connection) chatMod(flags string, usr string, msgText string) {
 
 	if lenMatch.MatchString(msgText) {
 		c.timeout(usr)
-		c.sendMsg("@%v Don't Spam Chat MODS", usr)
+		//		c.sendMsg("@%v Don't Spam Chat MODS", usr)
 		return
 	}
 
 	if tosMatch.MatchString(msgText) {
 		c.timeout(usr)
-		c.sendMsg("@%v Against TOS MODS", usr)
-		return
-	}
-
-	if engMatch.MatchString(msgText) {
-		c.timeout(usr)
-		c.sendMsg("@%v Stop That Perversion MODS", usr)
+		//		c.sendMsg("@%v Against TOS MODS", usr)
 		return
 	}
 
 	if otherLangMatch.MatchString(msgText) {
 		c.timeout(usr)
-		c.sendMsg("@%v English Language Only MODS", usr)
+		//		c.sendMsg("@%v English Language Only MODS", usr)
 		return
 	}
 
 	if charMatch.MatchString(msgText) {
 		c.timeout(usr)
-		c.sendMsg("@%v English Language Only MODS", usr)
+		//		c.sendMsg("@%v English Language Only MODS", usr)
 		return
 	}
 
 	if spamMatch.MatchString(msgText) {
 		c.timeout(usr)
-		c.sendMsg("@%v Don't Spam Chat MODS", usr)
+		//		c.sendMsg("@%v Don't Spam Chat MODS", usr)
 		return
 	}
 
-	if ballMatch.MatchString(msgText) {
+	if ballMatch.MatchString(msgText) || (ballMatch.MatchString(msgText) && modMatch.MatchString(msgText)) {
 		c.sendMsg("@%v %v", usr, ballSlice[rand.Intn(len(ballSlice))])
 		return
 	}
@@ -360,6 +359,25 @@ func (c *Connection) timeout(user string) {
 	return
 }
 
+func (c *Connection) timer() {
+	ticker := time.NewTicker(17 * time.Minute)
+	quit := make(chan struct{})
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				if mediaState {
+					c.sendMsg("/me Hey chat, Van will play your gachimuchi remixes if you include them in your donation! HandsUp")
+				}
+			case <-quit:
+				ticker.Stop()
+				return
+			}
+
+		}
+	}()
+}
+
 //Ranges through the userList and changes a chatter's banDur back to 6 if it has been 2 minutes or longer since their last timeout
 func init() {
 	go func() {
@@ -398,6 +416,7 @@ func main() {
 		panic(err)
 	}
 	defer log.Close()
+	c.timer()
 
 	for {
 		msg, err := chat.ReadLine()
