@@ -118,6 +118,7 @@ var spamSlice = []string{
 	wordMatcherEndL(`veve`),
 	wordMatcher(`flexair`),
 	wordMatcher(`rat tv`),
+	wordMatcherEndL(`aboba`),
 }
 var spamMatch = regexp.MustCompile("(?:(?:" + strings.Join(spamSlice, ")|(?:") + "))")
 
