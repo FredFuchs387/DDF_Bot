@@ -50,12 +50,18 @@ var nukeOnMatch = regexp.MustCompile(`(?i)(^)!NukeOn($)`)
 var nukeOffMatch = regexp.MustCompile(`(?i)(^)!NukeOff($)`)
 var mediashare = regexp.MustCompile(`(?i)(^)!mediashare($)`)
 var mediashareOff = regexp.MustCompile(`(?i)(^)!mediashareoff($)`)
+var russianOn = regexp.MustCompile(`(?i)(^)!russianon($)`)
+var russianOff = regexp.MustCompile(`(?i)(^)!russianoff($)`)
+var timezone = regexp.MustCompile(`[0-9]\s?(?:[ap]m)? *est`)
 
 //Default state of Nuke is OFF
 var nukeState = false
 
 //Default state of Media Share Notifications is OFF
 var mediaState = false
+
+//Default state of Russian language allowed is OFF
+var russianState = false
 
 //tosSlice contains strings which violate/risk violating Twitch TOS
 var tosSlice = []string{
@@ -98,6 +104,7 @@ var otherLangSlice = []string{
 	wordMatcher(`pered`),
 	wordMatcher(`russkie`),
 	wordMatcher(`ruskie`),
+	wordMatcher(`ruskim`),
 	wordMatcherEndL(`tut`),
 	wordMatcherEndL(`tyt`),
 	wordMatcher(`vpered`),
@@ -106,6 +113,7 @@ var otherLangSlice = []string{
 	wordMatcher(`wsem`),
 	wordMatcherEndL(`vot`),
 	wordMatcherEndL(`za`),
+	wordMatcherEndL(`zaebis`),
 	wordMatcherEndL(`zaebal`),
 	`(?i)(z\W*?)d\W*a\W*r\W*o\W*(v\W*|w\W*)a`,
 }
@@ -187,6 +195,16 @@ func (c *Connection) chatMod(flags string, usr string, msgText string) {
 			nukeState = false
 			return
 		}
+		if russianOn.MatchString(msgText) {
+			russianState = true
+			c.sendMsg("Russian Text PERMITTED in Chat @%v", usr)
+			return
+		}
+		if russianOff.MatchString(msgText) {
+			russianState = false
+			c.sendMsg("Russian Text DENIED in Chat @%v", usr)
+			return
+		}
 		if onlineMatch.MatchString(msgText) {
 			c.sendMsg("@%v YOURM0M", usr)
 			return
@@ -213,39 +231,37 @@ func (c *Connection) chatMod(flags string, usr string, msgText string) {
 	if urlMatch.MatchString(msgText) {
 		if !vipMatch.MatchString(flags) {
 			c.timeout(usr)
-			//			c.sendMsg("@%v Don't Post Links MODS", usr)
 			return
 		}
 		return
 	}
 
+	if !russianState {
+		if charMatch.MatchString(msgText) {
+			c.timeout(usr)
+			return
+		}
+
+		if otherLangMatch.MatchString(msgText) {
+			if !timezone.MatchString(msgText) {
+				c.timeout(usr)
+			}
+			return
+		}
+	}
+
 	if lenMatch.MatchString(msgText) {
 		c.timeout(usr)
-		//		c.sendMsg("@%v Don't Spam Chat MODS", usr)
 		return
 	}
 
 	if tosMatch.MatchString(msgText) {
 		c.timeout(usr)
-		//		c.sendMsg("@%v Against TOS MODS", usr)
-		return
-	}
-
-	if otherLangMatch.MatchString(msgText) {
-		c.timeout(usr)
-		//		c.sendMsg("@%v English Language Only MODS", usr)
-		return
-	}
-
-	if charMatch.MatchString(msgText) {
-		c.timeout(usr)
-		//		c.sendMsg("@%v English Language Only MODS", usr)
 		return
 	}
 
 	if spamMatch.MatchString(msgText) {
 		c.timeout(usr)
-		//		c.sendMsg("@%v Don't Spam Chat MODS", usr)
 		return
 	}
 
