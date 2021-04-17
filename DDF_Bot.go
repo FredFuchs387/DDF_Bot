@@ -66,12 +66,13 @@ var russianState = false
 //tosSlice contains strings which violate/risk violating Twitch TOS
 var tosSlice = []string{
 	wordMatcher(`fag`),
-	`(?i)(\W|^)n\W*i\W*(g\W*)+(e\W*|y\W*)?r`,
-	`(?i)(\W|^)n\W*(i\W*|y\W*)(g\W*)+(\W|$|a)`,
+	`(?i)(\W|^)(n\W*|И\W*)i\W*(g\W*)+(e\W*|y\W*)?r`,
+	`(?i)(\W|^)(n\W*|И\W*)(i\W*|y\W*)(g\W*)+(\W|$|a)`,
 	`(?i)p\W*i\W*d\W*(o\W*|a\W*)r\W*`,
 	wordMatcher(`pidrila`),
-	`(?i)п\PL*(и\PL*|й\PL*)д\PL*(о\PL*|а\PL*)р\PL*`,
-	`(?i)н\PL*(и\PL*|й\PL*)г\PL*(е\PL*|а\PL*)р`,
+	`(?i)п\PL*(и\PL*|й\PL*)д\PL*(о\PL*|а\PL*)р`,
+	`(?i)п\PL*е\PL*д\PL*и\PL*к`,
+	`(?i)н\PL*(и\PL*|й\PL*|е\PL*)г+\PL*(е\PL*|а\PL*)*р`,
 	wordMatcher(`retard`),
 	wordMatcher(`tranny`),
 }
@@ -197,12 +198,12 @@ func (c *Connection) chatMod(flags string, usr string, msgText string) {
 		}
 		if russianOn.MatchString(msgText) {
 			russianState = true
-			c.sendMsg("Russian Text PERMITTED in Chat @%v", usr)
+			c.sendMsg("Russian Text ENABLED in Chat @%v", usr)
 			return
 		}
 		if russianOff.MatchString(msgText) {
 			russianState = false
-			c.sendMsg("Russian Text DENIED in Chat @%v", usr)
+			c.sendMsg("Russian Text DISABLED in Chat @%v", usr)
 			return
 		}
 		if onlineMatch.MatchString(msgText) {
