@@ -38,6 +38,7 @@ var flagMatch = regexp.MustCompile(`@.+?\s:`)
 var msgMatch = regexp.MustCompile("PRIVMSG #vansamaofficial :(.*)$")
 
 var charMatch = regexp.MustCompile("[Ѐ-ӿ]+")
+var botCharMatch = regexp.MustCompile("[Ꭰ-Ᏼ]+")
 var lenMatch = regexp.MustCompile("^.{400,}$")
 var urlMatch = regexp.MustCompile(`http(s?)://`)
 var onlineMatch = regexp.MustCompile(`(?i)@your___m0m YOURM0M`)
@@ -189,6 +190,9 @@ func (c *Connection) chatMod(flags string, usr string, msgText string) {
 	if modMatch.MatchString(flags) {
 		if nukeOnMatch.MatchString(msgText) {
 			c.sendMsg("YOU GUYS NEED TO RELAX MODS")
+			c.sendMsg("/slow 30")
+			c.sendMsg("/followers 3d")
+			c.sendMsg("/subscribers")
 			nukeState = true
 			return
 		}
@@ -263,6 +267,10 @@ func (c *Connection) chatMod(flags string, usr string, msgText string) {
 
 	if spamMatch.MatchString(msgText) {
 		c.timeout(usr)
+		return
+	}
+	if botCharMatch.MatchString(msgText) {
+		c.sendMsg("/ban %v", usr)
 		return
 	}
 
