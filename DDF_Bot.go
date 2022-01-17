@@ -55,6 +55,11 @@ var russianOn = regexp.MustCompile(`(?i)(^)!russianon($)`)
 var russianOff = regexp.MustCompile(`(?i)(^)!russianoff($)`)
 var timezone = regexp.MustCompile(`[0-9]\s?(?:[ap]m)? *est`)
 
+var so1 = regexp.MustCompile(`(?i)say(\W*)`)
+var so2 = regexp.MustCompile(`(?i)hello (to)?`)
+var so3 = regexp.MustCompile(`(?i)hi (to)?`)
+var so4 = regexp.MustCompile(`(?i)can you`)
+
 //Default state of Nuke is OFF
 var nukeState = false
 
@@ -69,7 +74,7 @@ var tosSlice = []string{
 	wordMatcher(`fag`),
 	`(?i)(\W|^)(n\W*|И\W*)i\W*(g\W*)+(e\W*|y\W*)?r`,
 	`(?i)(\W|^)(n\W*|И\W*)(i\W*|y\W*)(g\W*)+(\W|$|a)`,
-	`(?i)p\W*i\W*d\W*(o\W*|a\W*)r\W*`,
+	`(?i)p\W*(i\W*|e\W*)d\W*(o\W*|a\W*)*r\W*`,
 	wordMatcher(`pidrila`),
 	`(?i)п\PL*(и\PL*|й\PL*)д\PL*(о\PL*|а\PL*)р`,
 	`(?i)п\PL*е\PL*д\PL*и\PL*к`,
@@ -95,6 +100,7 @@ var otherLangSlice = []string{
 	wordMatcherEndL(`eto`),
 	wordMatcherEndL(`iz`),
 	wordMatcherEndL(`kak`),
+	wordMatcher(`kaifovo`),
 	wordMatcherEndL(`kto`),
 	wordMatcher(`kogda`),
 	wordMatcher(`meste`),
@@ -284,6 +290,11 @@ func (c *Connection) chatMod(flags string, usr string, msgText string) {
 		c.sendMsg("/me %v has entered the dungeon VaN", usr)
 		return
 	}
+
+	if (so1.MatchString(msgText) && so4.MatchString(msgText)) || (so1.MatchString(msgText) && (so2.MatchString(msgText) || so3.MatchString(msgText))) {
+		c.timeout(usr)
+		return
+	}
 }
 
 //Manages connection to twitch IRC and backs off by a factor of 2
@@ -365,7 +376,7 @@ func getChatter(user string) *Chatter {
 	userListMutex.RLock()
 	chatter, inMap := userList[user]
 	userListMutex.RUnlock()
-	if !inMap {
+	if !inMap && !nukeState {
 		userListMutex.Lock()
 		chatter, inMap = userList[user]
 		if !inMap {
@@ -417,7 +428,7 @@ func init() {
 					}
 				}
 			}()
-			time.Sleep(time.Second * 10)
+			time.Sleep(time.Second * 20)
 		}
 	}()
 }
