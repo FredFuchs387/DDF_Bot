@@ -256,7 +256,6 @@ func (c *Connection) chatMod(flags string, usr string, msgText string) {
 			mediaState = false
 			return
 		}
-		return
 	}
 
 	if nukeState {
