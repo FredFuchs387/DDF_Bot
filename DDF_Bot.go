@@ -49,8 +49,8 @@ var modMatch = regexp.MustCompile(`;badges=moderator.+?\s`)
 var vipMatch = regexp.MustCompile(`;badges=vip.+?\s`)
 var timezone = regexp.MustCompile(`[0-9]\s?(?:[ap]m)? *est`)
 var messageTime = time.Now()
-var merchLastTime = time.Now()
-var socialLastTime = time.Now()
+var merchLastTime = messageTime.Add(time.Second * -20)
+var socialLastTime = messageTime.Add(time.Second * -20)
 
 //Moderator Commands
 var nukeOnMatch = regexp.MustCompile(`(?i)(^)!NukeOn($)`)
