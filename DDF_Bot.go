@@ -47,18 +47,41 @@ var subMatch = regexp.MustCompile(`;msg-param-cumulative-months=[0-9]+;.+?:`)
 var numMatch = regexp.MustCompile(`[0-9]+`)
 var modMatch = regexp.MustCompile(`;badges=moderator.+?\s`)
 var vipMatch = regexp.MustCompile(`;badges=vip.+?\s`)
+var timezone = regexp.MustCompile(`[0-9]\s?(?:[ap]m)? *est`)
+var messageTime = time.Now()
+var merchLastTime = time.Now()
+var socialLastTime = time.Now()
+
+//Moderator Commands
 var nukeOnMatch = regexp.MustCompile(`(?i)(^)!NukeOn($)`)
 var nukeOffMatch = regexp.MustCompile(`(?i)(^)!NukeOff($)`)
 var mediashare = regexp.MustCompile(`(?i)(^)!mediashare($)`)
 var mediashareOff = regexp.MustCompile(`(?i)(^)!mediashareoff($)`)
 var russianOn = regexp.MustCompile(`(?i)(^)!russianon($)`)
 var russianOff = regexp.MustCompile(`(?i)(^)!russianoff($)`)
-var timezone = regexp.MustCompile(`[0-9]\s?(?:[ap]m)? *est`)
 
+//Chat Commands
+var merch = regexp.MustCompile(`(?i)(^)!merch($)`)
+var social = regexp.MustCompile(`(?i)(^)!social($)`)
+var shoutout = regexp.MustCompile(`(?i)(^)!shoutout($)`)
+
+//Shoutout Trigger Words
 var so1 = regexp.MustCompile(`(?i)say(\W*)`)
 var so2 = regexp.MustCompile(`(?i)hello (to)?`)
 var so3 = regexp.MustCompile(`(?i)hi (to)?`)
 var so4 = regexp.MustCompile(`(?i)can you`)
+var so5 = regexp.MustCompile(`(?i)please`)
+
+//Merchandise Links
+var mywheats = `https://www.mywheats.com/vansamaofficial`
+var slmerch = `https://streamlabs.com/vansamaofficial/merch`
+var taobao = `https://shop170176806.world.taobao.com/index.htm?spm=2013.1.w5002-23239319357.2.5faa46bdnfP0oX`
+
+//Social Media Links
+var bilibili = `https://space.bilibili.com/477631979`
+var instagram = `https://www.instagram.com/vansamaofficial/`
+var twitter = `https://twitter.com/vansamaofficial`
+var youtube = `https://www.youtube.com/channel/UCoTJydABhshW-N_h_tN9rrQ`
 
 //Default state of Nuke is OFF
 var nukeState = false
@@ -75,6 +98,8 @@ var tosSlice = []string{
 	`(?i)(\W|^)(n\W*|И\W*)i\W*(g\W*)+(e\W*|y\W*)?r`,
 	`(?i)(\W|^)(n\W*|И\W*)(i\W*|y\W*)(g\W*)+(\W|$|a)`,
 	`(?i)p\W*(i\W*|e\W*)d\W*(o\W*|a\W*)*r\W*`,
+	wordMatcher(`peedor`),
+	wordMatcher(`peedour`),
 	wordMatcher(`pidrila`),
 	`(?i)п\PL*(и\PL*|й\PL*)д\PL*(о\PL*|а\PL*)р`,
 	`(?i)п\PL*е\PL*д\PL*и\PL*к`,
@@ -107,12 +132,14 @@ var otherLangSlice = []string{
 	wordMatcherEndL(`nad`),
 	wordMatcher(`pizdec`),
 	wordMatcher(`pochemu`),
+	wordMatcher(`po4emy`),
 	wordMatcher(`poimal`),
 	wordMatcher(`posle`),
 	wordMatcher(`pered`),
 	wordMatcher(`russkie`),
 	wordMatcher(`ruskie`),
 	wordMatcher(`ruskim`),
+	wordMatcher(`slava`),
 	wordMatcherEndL(`tut`),
 	wordMatcherEndL(`tyt`),
 	wordMatcher(`vpered`),
@@ -293,6 +320,40 @@ func (c *Connection) chatMod(flags string, usr string, msgText string) {
 
 	if (so1.MatchString(msgText) && so4.MatchString(msgText)) || (so1.MatchString(msgText) && (so2.MatchString(msgText) || so3.MatchString(msgText))) {
 		c.timeout(usr)
+		return
+	}
+
+	if so1.MatchString(msgText) && so5.MatchString(msgText) {
+		c.timeout(usr)
+		return
+	}
+
+	if merch.MatchString(msgText) {
+		if messageTime.Sub(merchLastTime).Seconds() >= 20 {
+			c.sendMsg("MyWheats: %v", mywheats)
+			c.sendMsg("StreamLabs: %v", slmerch)
+			c.sendMsg("TaoBao: %v", taobao)
+			merchLastTime = messageTime
+			return
+		}
+		return
+
+	}
+
+	if social.MatchString(msgText) {
+		if messageTime.Sub(socialLastTime).Seconds() >= 20 {
+			c.sendMsg("BiliBili: %v", bilibili)
+			c.sendMsg("Instagram: %v", instagram)
+			c.sendMsg("Twitter: %v", twitter)
+			c.sendMsg("YouTube %v", youtube)
+			socialLastTime = messageTime
+			return
+		}
+		return
+	}
+
+	if shoutout.MatchString(msgText) {
+		c.sendMsg("Want a shoutout for yourself or a friend? Go to https://www.cameo.com/vansamaofficial VaN")
 		return
 	}
 }
