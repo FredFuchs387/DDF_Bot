@@ -48,9 +48,8 @@ var numMatch = regexp.MustCompile(`[0-9]+`)
 var modMatch = regexp.MustCompile(`;badges=moderator.+?\s`)
 var vipMatch = regexp.MustCompile(`;badges=vip.+?\s`)
 var timezone = regexp.MustCompile(`[0-9]\s?(?:[ap]m)? *est`)
-var messageTime = time.Now()
-var merchLastTime = messageTime.Add(time.Second * -20)
-var socialLastTime = messageTime.Add(time.Second * -20)
+var merchLastTime = time.Now().Add(time.Second * -20)
+var socialLastTime = time.Now().Add(time.Second * -20)
 
 //Moderator Commands
 var nukeOnMatch = regexp.MustCompile(`(?i)(^)!NukeOn($)`)
@@ -81,7 +80,7 @@ var taobao = `https://shop170176806.world.taobao.com/index.htm?spm=2013.1.w5002-
 var bilibili = `https://space.bilibili.com/477631979`
 var instagram = `https://www.instagram.com/vansamaofficial/`
 var twitter = `https://twitter.com/vansamaofficial`
-var youtube = `https://www.youtube.com/channel/UCoTJydABhshW-N_h_tN9rrQ`
+var youtube = `https://www.youtube.com/c/vansamaofficial`
 
 //Default state of Nuke is OFF
 var nukeState = false
@@ -328,11 +327,11 @@ func (c *Connection) chatMod(flags string, usr string, msgText string) {
 	}
 
 	if merch.MatchString(msgText) {
-		if messageTime.Sub(merchLastTime).Seconds() >= 20 {
+		if time.Now().Sub(merchLastTime).Seconds() >= 20 {
 			c.sendMsg("MyWheats: %v", mywheats)
 			c.sendMsg("StreamLabs: %v", slmerch)
 			c.sendMsg("TaoBao: %v", taobao)
-			merchLastTime = messageTime
+			merchLastTime = time.Now()
 			return
 		}
 		return
@@ -340,12 +339,12 @@ func (c *Connection) chatMod(flags string, usr string, msgText string) {
 	}
 
 	if social.MatchString(msgText) {
-		if messageTime.Sub(socialLastTime).Seconds() >= 20 {
+		if time.Now().Sub(socialLastTime).Seconds() >= 20 {
 			c.sendMsg("BiliBili: %v", bilibili)
 			c.sendMsg("Instagram: %v", instagram)
 			c.sendMsg("Twitter: %v", twitter)
 			c.sendMsg("YouTube %v", youtube)
-			socialLastTime = messageTime
+			socialLastTime = time.Now()
 			return
 		}
 		return
