@@ -64,12 +64,20 @@ var merch = regexp.MustCompile(`(?i)(^)!merch($)`)
 var social = regexp.MustCompile(`(?i)(^)!social($)`)
 var shoutout = regexp.MustCompile(`(?i)(^)!shoutout($)`)
 
-//Shoutout Trigger Words
+//Shoutout Filters
 var so1 = regexp.MustCompile(`(?i)say(\W*)`)
 var so2 = regexp.MustCompile(`(?i)hello (to)?`)
 var so3 = regexp.MustCompile(`(?i)hi (to)?`)
 var so4 = regexp.MustCompile(`(?i)can you`)
 var so5 = regexp.MustCompile(`(?i)please`)
+var so6 = regexp.MustCompile(`(?i)congratulate`)
+var so7 = regexp.MustCompile(`(?i)wish`)
+var so8 = regexp.MustCompile(`(?i)birthday`)
+
+//Current Event Filters
+var ce1 = regexp.MustCompile(`(?i)(\W)ukraine`)
+var ce2 = regexp.MustCompile(`(?i)(\W)russia`)
+var ce3 = regexp.MustCompile(`(?i)(\W)war`)
 
 //Merchandise Links
 var mywheats = `https://www.mywheats.com/vansamaofficial`
@@ -259,7 +267,7 @@ func (c *Connection) chatMod(flags string, usr string, msgText string) {
 
 	if nukeState {
 		if !modMatch.MatchString(flags) || !vipMatch.MatchString(flags) {
-			c.sendMsg("/timeout %v %v", usr, "5")
+			c.sendMsg("/timeout %v %v", usr, "30")
 		}
 		return
 	}
@@ -322,6 +330,16 @@ func (c *Connection) chatMod(flags string, usr string, msgText string) {
 	}
 
 	if so1.MatchString(msgText) && so5.MatchString(msgText) {
+		c.timeout(usr)
+		return
+	}
+
+	if (so6.MatchString(msgText) || so7.MatchString(msgText)) && so8.MatchString(msgText) {
+		c.timeout(usr)
+		return
+	}
+
+	if (ce1.MatchString(msgText) || ce2.MatchString(msgText)) && ce3.MatchString(msgText) {
 		c.timeout(usr)
 		return
 	}
