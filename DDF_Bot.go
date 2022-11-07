@@ -23,11 +23,12 @@ type Connection struct {
 	conn net.Conn
 }
 
-//Chatter type contains username, the time at which they were last timed out, and the duration of that timeout
+//Chatter type contains username, the time at which they were last timed out, the duration of that timeout, and the number of timeouts within the last 5 minutes
 type Chatter struct {
 	name   string
 	time   time.Time
 	banDur int
+	banCt  int
 }
 
 var userListMutex = &sync.RWMutex{}
@@ -54,7 +55,7 @@ var socialLastTime = time.Now().Add(time.Second * -20)
 //Moderator Commands
 var nukeOnMatch = regexp.MustCompile(`(?i)(^)!NukeOn($)`)
 var nukeOffMatch = regexp.MustCompile(`(?i)(^)!NukeOff($)`)
-var mediashare = regexp.MustCompile(`(?i)(^)!mediashare($)`)
+var mediashare = regexp.MustCompile(`(?i)(^)!mediashareon($)`)
 var mediashareOff = regexp.MustCompile(`(?i)(^)!mediashareoff($)`)
 var russianOn = regexp.MustCompile(`(?i)(^)!russianon($)`)
 var russianOff = regexp.MustCompile(`(?i)(^)!russianoff($)`)
@@ -63,9 +64,10 @@ var russianOff = regexp.MustCompile(`(?i)(^)!russianoff($)`)
 var merch = regexp.MustCompile(`(?i)(^)!merch($)`)
 var social = regexp.MustCompile(`(?i)(^)!social($)`)
 var shoutout = regexp.MustCompile(`(?i)(^)!shoutout($)`)
+var shoutoutru = regexp.MustCompile(`(?i)(^)!shoutoutru($)`)
 
 //Shoutout Filters
-var so1 = regexp.MustCompile(`(?i)say(\W*)`)
+var so1 = regexp.MustCompile(`(?i)say(\W)`)
 var so2 = regexp.MustCompile(`(?i)hello (to)?`)
 var so3 = regexp.MustCompile(`(?i)hi (to)?`)
 var so4 = regexp.MustCompile(`(?i)can you`)
@@ -78,6 +80,7 @@ var so8 = regexp.MustCompile(`(?i)birthday`)
 var ce1 = regexp.MustCompile(`(?i)(\W)ukraine`)
 var ce2 = regexp.MustCompile(`(?i)(\W)russia`)
 var ce3 = regexp.MustCompile(`(?i)(\W)war`)
+var ce4 = regexp.MustCompile(`(?i)(\W)ww3`)
 
 //Merchandise Links
 var mywheats = `https://www.mywheats.com/vansamaofficial`
@@ -163,7 +166,7 @@ var otherLangMatch = regexp.MustCompile("(?:(?:" + strings.Join(otherLangSlice, 
 
 //spamSlice contains strings which are deemed to be spam
 var spamSlice = []string{
-	wordMatcherEndL(`stray228`),
+	wordMatcher(`stray228`),
 	wordMatcherEndL(`wewe`),
 	wordMatcherEndL(`veve`),
 	wordMatcher(`flexair`),
@@ -339,7 +342,7 @@ func (c *Connection) chatMod(flags string, usr string, msgText string) {
 		return
 	}
 
-	if (ce1.MatchString(msgText) || ce2.MatchString(msgText)) && ce3.MatchString(msgText) {
+	if ((ce1.MatchString(msgText) || ce2.MatchString(msgText)) && ce3.MatchString(msgText)) || ce4.MatchString(msgText) {
 		c.timeout(usr)
 		return
 	}
@@ -369,7 +372,14 @@ func (c *Connection) chatMod(flags string, usr string, msgText string) {
 	}
 
 	if shoutout.MatchString(msgText) {
-		c.sendMsg("Want a shoutout for yourself or a friend? Go to https://www.cameo.com/vansamaofficial VaN")
+		c.sendMsg("Want a short shoutout? Support the channel at https://streamlabs.com/vansamaofficial/tip BillyApprove")
+		c.sendMsg("Want a personalized shoutout from the Dungeon Master himself? Go to https://www.cameo.com/vansamaofficial BillyApprove")
+		return
+	}
+
+	if shoutoutru.MatchString(msgText) {
+		c.sendMsg("Хотите короткое приветствие или ответ на вопрос от Вана? Поддержите канал донатом по ссылке https://streamlabs.com/vansamaofficial/tip BillyApprove")
+		c.sendMsg("Хотите персональное видео-обращение или поздравление от самого Данжен Мастера? Переходите по https://www.cameo.com/vansamaofficial BillyApprove")
 		return
 	}
 }
@@ -457,7 +467,7 @@ func getChatter(user string) *Chatter {
 		userListMutex.Lock()
 		chatter, inMap = userList[user]
 		if !inMap {
-			chatter = &Chatter{name: user, time: time.Now(), banDur: 6}
+			chatter = &Chatter{name: user, time: time.Now(), banDur: 5, banCt: 0}
 			userList[user] = chatter
 		}
 		userListMutex.Unlock()
@@ -468,8 +478,14 @@ func getChatter(user string) *Chatter {
 //Sends the message to timeout a user
 func (c *Connection) timeout(user string) {
 	chatter := getChatter(user)
+	if chatter.banCt == 1 {
+		chatter.banDur = 30
+	}
+	if chatter.banCt == 2 {
+		chatter.banDur = 300
+	}
 	c.sendMsg("/timeout %v %v", user, chatter.banDur)
-	chatter.banDur *= 50
+	chatter.banCt += 1
 	return
 }
 
@@ -492,7 +508,7 @@ func (c *Connection) timer() {
 	}()
 }
 
-//Ranges through the userList and changes a chatter's banDur back to 6 if it has been 2 minutes or longer since their last timeout
+//Ranges through the userList and changes a chatter's banDur back to 5 seconds if it has been 5 minutes or longer since their last timeout
 func init() {
 	go func() {
 		for {
@@ -500,8 +516,8 @@ func init() {
 				userListMutex.Lock()
 				defer userListMutex.Unlock()
 				for _, v := range userList {
-					if time.Now().Sub(v.time) >= time.Second*120 {
-						v.banDur = 6
+					if time.Now().Sub(v.time) >= time.Second*300 {
+						v.banDur = 5
 					}
 				}
 			}()
