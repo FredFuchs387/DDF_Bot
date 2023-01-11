@@ -39,6 +39,7 @@ var msgMatch = regexp.MustCompile("PRIVMSG #vansamaofficial :(.*)$")
 
 var charMatch = regexp.MustCompile("[Ѐ-ӿ]+")
 var botCharMatch = regexp.MustCompile("[Ꭰ-Ᏼ]+")
+var rbotStringMatch = regexp.MustCompile("зачистка соледара прошла успешно, гойда!")
 var lenMatch = regexp.MustCompile("^.{400,}$")
 var urlMatch = regexp.MustCompile(`http(s?)://`)
 var onlineMatch = regexp.MustCompile(`(?i)@your___m0m YOURM0M`)
@@ -65,7 +66,7 @@ var social = regexp.MustCompile(`(?i)(^)!social($)`)
 var shoutout = regexp.MustCompile(`(?i)(^)!shoutout($)`)
 
 //Shoutout Filters
-var so1 = regexp.MustCompile(`(?i)say(\W*)`)
+var so1 = regexp.MustCompile(`(?i)say(\W)`)
 var so2 = regexp.MustCompile(`(?i)hello (to)?`)
 var so3 = regexp.MustCompile(`(?i)hi (to)?`)
 var so4 = regexp.MustCompile(`(?i)can you`)
@@ -78,6 +79,7 @@ var so8 = regexp.MustCompile(`(?i)birthday`)
 var ce1 = regexp.MustCompile(`(?i)(\W)ukraine`)
 var ce2 = regexp.MustCompile(`(?i)(\W)russia`)
 var ce3 = regexp.MustCompile(`(?i)(\W)war`)
+var ce4 = regexp.MustCompile(`(?i)(\W)ww3`)
 
 //Merchandise Links
 var mywheats = `https://www.mywheats.com/vansamaofficial`
@@ -308,7 +310,7 @@ func (c *Connection) chatMod(flags string, usr string, msgText string) {
 		c.timeout(usr)
 		return
 	}
-	if botCharMatch.MatchString(msgText) {
+	if botCharMatch.MatchString(msgText) || rBotStringMatch.MathString(msgText) {
 		c.sendMsg("/ban %v", usr)
 		return
 	}
@@ -339,7 +341,7 @@ func (c *Connection) chatMod(flags string, usr string, msgText string) {
 		return
 	}
 
-	if (ce1.MatchString(msgText) || ce2.MatchString(msgText)) && ce3.MatchString(msgText) {
+	if ((ce1.MatchString(msgText) || ce2.MatchString(msgText)) && ce3.MatchString(msgText)) || ce4.MatchString(msgText) {
 		c.timeout(usr)
 		return
 	}
