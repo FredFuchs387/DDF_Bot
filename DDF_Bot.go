@@ -18,12 +18,11 @@ import (
 	"time"
 )
 
-//Connection type allows for easier joining the twitch IRC server as well as maintaining the connection
+// Connection type allows for easier joining the twitch IRC server as well as maintaining the connection
 type Connection struct {
 	conn net.Conn
 }
 
-//Chatter type contains username, the time at which they were last timed out, the duration of that timeout, and the number of timeouts within the last 5 minutes
 type Chatter struct {
 	name   string
 	time   time.Time
@@ -40,7 +39,7 @@ var msgMatch = regexp.MustCompile("PRIVMSG #vansamaofficial :(.*)$")
 
 var charMatch = regexp.MustCompile("[Ѐ-ӿ]+")
 var botCharMatch = regexp.MustCompile("[Ꭰ-Ᏼ]+")
-var rbotStringMatch = regexp.MustCompile("зачистка соледара прошла успешно, гойда!")
+var rBotStringMatch = regexp.MustCompile(" зачистка соледара прошла успешно, гойда!")
 var lenMatch = regexp.MustCompile("^.{400,}$")
 var urlMatch = regexp.MustCompile(`http(s?)://`)
 var onlineMatch = regexp.MustCompile(`(?i)@your___m0m YOURM0M`)
@@ -53,7 +52,7 @@ var timezone = regexp.MustCompile(`[0-9]\s?(?:[ap]m)? *est`)
 var merchLastTime = time.Now().Add(time.Second * -20)
 var socialLastTime = time.Now().Add(time.Second * -20)
 
-//Moderator Commands
+// Moderator Commands
 var nukeOnMatch = regexp.MustCompile(`(?i)(^)!NukeOn($)`)
 var nukeOffMatch = regexp.MustCompile(`(?i)(^)!NukeOff($)`)
 var mediashare = regexp.MustCompile(`(?i)(^)!mediashareon($)`)
@@ -61,13 +60,13 @@ var mediashareOff = regexp.MustCompile(`(?i)(^)!mediashareoff($)`)
 var russianOn = regexp.MustCompile(`(?i)(^)!russianon($)`)
 var russianOff = regexp.MustCompile(`(?i)(^)!russianoff($)`)
 
-//Chat Commands
+// Chat Commands
 var merch = regexp.MustCompile(`(?i)(^)!merch($)`)
 var social = regexp.MustCompile(`(?i)(^)!social($)`)
 var shoutout = regexp.MustCompile(`(?i)(^)!shoutout($)`)
 var shoutoutru = regexp.MustCompile(`(?i)(^)!shoutoutru($)`)
 
-//Shoutout Filters
+// Shoutout Filters
 var so1 = regexp.MustCompile(`(?i)say(\W)`)
 var so2 = regexp.MustCompile(`(?i)hello (to)?`)
 var so3 = regexp.MustCompile(`(?i)hi (to)?`)
@@ -77,33 +76,33 @@ var so6 = regexp.MustCompile(`(?i)congratulate`)
 var so7 = regexp.MustCompile(`(?i)wish`)
 var so8 = regexp.MustCompile(`(?i)birthday`)
 
-//Current Event Filters
+// Current Event Filters
 var ce1 = regexp.MustCompile(`(?i)(\W)ukraine`)
 var ce2 = regexp.MustCompile(`(?i)(\W)russia`)
 var ce3 = regexp.MustCompile(`(?i)(\W)war`)
 var ce4 = regexp.MustCompile(`(?i)(\W)ww3`)
 
-//Merchandise Links
+// Merchandise Links
 var mywheats = `https://www.mywheats.com/vansamaofficial`
 var slmerch = `https://streamlabs.com/vansamaofficial/merch`
 var taobao = `https://shop170176806.world.taobao.com/index.htm?spm=2013.1.w5002-23239319357.2.5faa46bdnfP0oX`
 
-//Social Media Links
+// Social Media Links
 var bilibili = `https://space.bilibili.com/477631979`
 var instagram = `https://www.instagram.com/vansamaofficial/`
 var twitter = `https://twitter.com/vansamaofficial`
 var youtube = `https://www.youtube.com/c/vansamaofficial`
 
-//Default state of Nuke is OFF
+// Default state of Nuke is OFF
 var nukeState = false
 
-//Default state of Media Share Notifications is OFF
+// Default state of Media Share Notifications is OFF
 var mediaState = false
 
-//Default state of Russian language allowed is OFF
+// Default state of Russian language allowed is OFF
 var russianState = false
 
-//tosSlice contains strings which violate/risk violating Twitch TOS
+// tosSlice contains strings which violate/risk violating Twitch TOS
 var tosSlice = []string{
 	wordMatcher(`fag`),
 	`(?i)(\W|^)(n\W*|И\W*)i\W*(g\W*)+(e\W*|y\W*)?r`,
@@ -120,7 +119,7 @@ var tosSlice = []string{
 }
 var tosMatch = regexp.MustCompile("(?:(?:" + strings.Join(tosSlice, ")|(?:") + "))")
 
-//otherLangSlice contains non English strings which are to be filtered
+// otherLangSlice contains non English strings which are to be filtered
 var otherLangSlice = []string{
 	wordMatcherEndL(`bez`),
 	wordMatcherEndL(`cherez`),
@@ -165,7 +164,7 @@ var otherLangSlice = []string{
 }
 var otherLangMatch = regexp.MustCompile("(?:(?:" + strings.Join(otherLangSlice, ")|(?:") + "))")
 
-//spamSlice contains strings which are deemed to be spam
+// spamSlice contains strings which are deemed to be spam
 var spamSlice = []string{
 	wordMatcher(`stray228`),
 	wordMatcherEndL(`wewe`),
@@ -176,7 +175,7 @@ var spamSlice = []string{
 }
 var spamMatch = regexp.MustCompile("(?:(?:" + strings.Join(spamSlice, ")|(?:") + "))")
 
-//Contains all the possible !8ball responses
+// Contains all the possible !8ball responses
 var ballSlice = []string{
 	`As I see it, yes.`,
 	`Ask again later.`,
@@ -200,22 +199,22 @@ var ballSlice = []string{
 	`You may rely on it.`,
 }
 
-//Matches !8ball at the beginning of a message
+// Matches !8ball at the beginning of a message
 var ballMatch = regexp.MustCompile(`(^)!8ball `)
 
 var dungeonMatch = regexp.MustCompile(`(^)!enter(\W|$)`)
 
-//Converts a normal string into a consistent regex pattern
+// Converts a normal string into a consistent regex pattern
 func wordMatcher(word string) string {
 	return `(?i)(\W|^)` + strings.Join(strings.Split(word, ""), `+\W*`)
 }
 
-//As wordMatcher, except this pattern checks for trailing non-words or endline
+// As wordMatcher, except this pattern checks for trailing non-words or endline
 func wordMatcherEndL(word string) string {
 	return `(?i)(\W|^)` + strings.Join(strings.Split(word, ""), `\W*`) + `(\W|$)`
 }
 
-//Checks text extracted from IRC and responds based on the first matched regex
+// Checks text extracted from IRC and responds based on the first matched regex
 func (c *Connection) chatMod(flags string, usr string, msgText string) {
 	if bitMatch.MatchString(flags) {
 		bitFlag := bitMatch.FindStringSubmatch(flags)
@@ -312,7 +311,7 @@ func (c *Connection) chatMod(flags string, usr string, msgText string) {
 		c.timeout(usr)
 		return
 	}
-	if botCharMatch.MatchString(msgText) || rBotStringMatch.MathString(msgText) {
+	if botCharMatch.MatchString(msgText) || rBotStringMatch.MatchString(msgText) {
 		c.sendMsg("/ban %v", usr)
 		return
 	}
@@ -385,7 +384,7 @@ func (c *Connection) chatMod(flags string, usr string, msgText string) {
 	}
 }
 
-//Manages connection to twitch IRC and backs off by a factor of 2
+// Manages connection to twitch IRC and backs off by a factor of 2
 func (c *Connection) connect() {
 
 	holdoff := time.Second * 2
@@ -407,7 +406,7 @@ func (c *Connection) disconnect() {
 	c.conn.Close()
 }
 
-//Retrieves the Oauth token from another file
+// Retrieves the Oauth token from another file
 func getOauth() string {
 	token, err := ioutil.ReadFile(driveName) //driveName should be the location of the file containing the Oathtoken
 	if err != nil {
@@ -426,7 +425,7 @@ func getFlags(msg string) string {
 	return ""
 }
 
-//Extracts a twitch user's message from an IRC message
+// Extracts a twitch user's message from an IRC message
 func getText(msg string) string {
 	text := msgMatch.FindStringSubmatch(msg)
 	if text != nil {
@@ -435,7 +434,7 @@ func getText(msg string) string {
 	return ""
 }
 
-//Extracts a twitch user's username from an IRC message
+// Extracts a twitch user's username from an IRC message
 func getUser(msg string) string {
 	user := userMatch.FindStringSubmatch(msg)
 	if user != nil {
@@ -444,17 +443,17 @@ func getUser(msg string) string {
 	return ""
 }
 
-//Responds to server ping
+// Responds to server ping
 func (c *Connection) pong() {
 	c.sendData("PONG")
 }
 
-//Sends a complete message to the IRC server
+// Sends a complete message to the IRC server
 func (c *Connection) sendData(message string) {
 	fmt.Fprintf(c.conn, "%s\r\n", message)
 }
 
-//Generic function to send a given formatted string in chat
+// Generic function to send a given formatted string in chat
 func (c *Connection) sendMsg(format string, a ...interface{}) {
 	c.sendData(fmt.Sprintf("PRIVMSG #vansamaofficial :" + fmt.Sprintf(format, a...)))
 	return
@@ -476,7 +475,7 @@ func getChatter(user string) *Chatter {
 	return chatter
 }
 
-//Sends the message to timeout a user
+// Sends the message to timeout a user
 func (c *Connection) timeout(user string) {
 	chatter := getChatter(user)
 	if chatter.banCt == 1 {
@@ -509,7 +508,6 @@ func (c *Connection) timer() {
 	}()
 }
 
-//Ranges through the userList and changes a chatter's banDur back to 5 seconds if it has been 5 minutes or longer since their last timeout
 func init() {
 	go func() {
 		for {
