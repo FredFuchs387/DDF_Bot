@@ -39,7 +39,7 @@ var msgMatch = regexp.MustCompile("PRIVMSG #vansamaofficial :(.*)$")
 
 var charMatch = regexp.MustCompile("[Ѐ-ӿ]+")
 var botCharMatch = regexp.MustCompile("[Ꭰ-Ᏼ]+")
-var rBotStringMatch = regexp.MustCompile(" зачистка соледара прошла успешно, гойда!")
+var rBotStringMatch = regexp.MustCompile("зачистка соледара прошла успешно, гойда!")
 var lenMatch = regexp.MustCompile("^.{400,}$")
 var urlMatch = regexp.MustCompile(`http(s?)://`)
 var onlineMatch = regexp.MustCompile(`(?i)@your___m0m YOURM0M`)
